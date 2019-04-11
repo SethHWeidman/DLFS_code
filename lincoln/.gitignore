@@ -1,0 +1,14 @@
+*__pycache__*
+*.pyc*
+*.ipynb_checkpoints*
+*.DS_Store*
+*.c
+*.so
+*.o
+*.txt
+
+*data/*
+*.pkl*
+
+*.pt
+*ubyte
