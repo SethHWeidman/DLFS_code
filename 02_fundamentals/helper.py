@@ -26,7 +26,7 @@ def tensor_size(tensor: Tensor) -> int:
     return list(tensor.size())[0]
 
 def to_2d_np(a: ndarray, 
-          type: str="col") -> Tensor:
+          type: str="col") -> ndarray:
     '''
     Turns a 1D Tensor into 2D
     '''
