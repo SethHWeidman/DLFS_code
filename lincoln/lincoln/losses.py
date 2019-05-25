@@ -1,7 +1,11 @@
-import torch
-from torch import Tensor
+import numpy as np
+from numpy import ndarray
 
-from .utils import assert_same_shapes, softmax
+from .np_utils import (assert_same_shape,
+                       softmax,
+                       normalize,
+                       exp_ratios,
+                       unnormalize)
 
 
 class Loss(object):
@@ -9,9 +13,12 @@ class Loss(object):
     def __init__(self):
         pass
 
-    def forward(self, prediction: Tensor, target: Tensor) -> float:
+    def forward(self,
+                prediction: ndarray,
+                target: ndarray) -> float:
 
-        assert_same_shapes(prediction, target)
+        # batch size x num_classes
+        assert_same_shape(prediction, target)
 
         self.prediction = prediction
         self.target = target
@@ -20,149 +27,106 @@ class Loss(object):
 
         return self.output
 
-    def backward(self) -> Tensor:
+    def backward(self) -> ndarray:
 
         self.input_grad = self._input_grad()
 
-        assert_same_shapes(self.prediction, self.input_grad)
+        assert_same_shape(self.prediction, self.input_grad)
 
         return self.input_grad
 
     def _output(self) -> float:
         raise NotImplementedError()
 
-    def _input_grad(self) -> Tensor:
+    def _input_grad(self) -> ndarray:
         raise NotImplementedError()
 
 
 class MeanSquaredError(Loss):
 
-    def __init__(self) -> None:
+    def __init__(self,
+                 normalize: bool = False) -> None:
         super().__init__()
+        self.normalize = normalize
 
     def _output(self) -> float:
 
-        loss = torch.sum(torch.pow(self.prediction - self.target, 2))
+        if self.normalize:
+            self.prediction = self.prediction / self.prediction.sum(axis=1, keepdims=True)
+
+        loss = np.sum(np.power(self.prediction - self.target, 2)) / self.prediction.shape[0]
 
         return loss
 
-    def _input_grad(self) -> Tensor:
+    def _input_grad(self) -> ndarray:
 
-        return 2.0 * (self.prediction - self.target)
+        return 2.0 * (self.prediction - self.target) / self.prediction.shape[0]
 
 
-class LogSoftmaxLoss(Loss):
-    def __init__(self, eta=1e-9) -> None:
+class SoftmaxCrossEntropy(Loss):
+    def __init__(self, eps: float=1e-9) -> None:
         super().__init__()
+        self.eps = eps
+        self.single_class = False
 
     def _output(self) -> float:
 
-        eps = 1e-7
-        softmax_preds = torch.stack([softmax(pred)
-                                     for pred in self.prediction])
+        # if the network is just outputting probabilities
+        # of just belonging to one class:
+        if self.target.shape[1] == 0:
+            self.single_class = True
 
-        pos_class = torch.clamp(softmax_preds, min=eps)
-        neg_class = torch.clamp(softmax_preds, max=1 - eps)
+        # if "single_class", apply the "normalize" operation defined above:
+        if self.single_class:
+            self.prediction, self.target = \
+            normalize(self.prediction), normalize(self.target)
 
-        log_loss = -1.0 * self.target * torch.log(pos_class) - \
-            (1.0 - self.target) * torch.log(1 - neg_class)
+        # applying the softmax function to each row (observation)
+        softmax_preds = softmax(self.prediction, axis=1)
 
-        # if torch.sum(log_loss).item() > 1000000:
-            # import pdb; pdb.set_trace()
+        # clipping the softmax output to prevent numeric instability
+        self.softmax_preds = np.clip(softmax_preds, self.eps, 1 - self.eps)
 
-        return torch.sum(log_loss).item()
+        # actual loss computation
+        softmax_cross_entropy_loss = -1.0 * self.target * np.log(self.softmax_preds) - \
+            (1.0 - self.target) * np.log(1 - self.softmax_preds)
 
-    def _input_grad(self) -> Tensor:
+        return np.sum(softmax_cross_entropy_loss) / self.prediction.shape[0]
 
-        softmax_preds = softmax(self.prediction)
+    def _input_grad(self) -> ndarray:
 
-        return softmax_preds - self.target
+        # if "single_class", "un-normalize" probabilities before returning gradient:
+        if self.single_class:
+            return unnormalize(self.softmax_preds - self.target)
+        else:
+            return (self.softmax_preds - self.target) / self.prediction.shape[0]
 
 
-class LogSigmoidLoss(Loss):
-    def __init__(self, eta=1e-6):
+class SoftmaxCrossEntropyComplex(SoftmaxCrossEntropy):
+    def __init__(self, eta: float=1e-9,
+                 single_output: bool = False) -> None:
         super().__init__()
+        self.single_output = single_output
 
-        # Small parameter to avoid explosions when our
-        # probabilities get near 0 or 1
-        # A better way to do this is use log probabilities everywhere
-        self.eta = eta
+    def _input_grad(self) -> ndarray:
 
-    def _output(self) -> float:
-        prediction, target = self.prediction, self.target
-        loss = torch.sum(-target*prediction -
-                         (1-target) *
-                         torch.log(1-torch.exp(prediction) + self.eta))
+        prob_grads = []
+        batch_size = self.softmax_preds.shape[0]
+        num_features = self.softmax_preds.shape[1]
+        for n in range(batch_size):
+            exp_ratio = exp_ratios(self.prediction[n] - np.max(self.prediction[n]))
+            jacobian = np.zeros((num_features, num_features))
+            for f1 in range(num_features):  # p index
+                for f2 in range(num_features):  # SCE index
+                    if f1 == f2:
+                        jacobian[f1][f2] = (
+                            self.softmax_preds[n][f1] - self.target[n][f1])
+                    else:
+                        jacobian[f1][f2] = (
+                            -(self.target[n][f2]-1) * exp_ratio[f1][f2] + self.target[n][f2] + self.softmax_preds[n][f1] - 1)
+            prob_grads.append(jacobian.sum(axis=1))
 
-        return loss
-
-    def _input_grad(self) -> Tensor:
-
-        prediction, target = self.prediction, self.target
-
-        exp_z = torch.exp(prediction)
-        N = target.shape[0]
-        self.loss_grad = torch.sum(-target +
-                                   (1-target)*exp_z/(1 - exp_z + self.eta),
-                                   dim=1).\
-            view(N, -1)
-
-        return self.loss_grad
-
-
-class CrossEntropy(Loss):
-    def __init__(self):
-        super().__init__()
-
-
-    def _output(self) -> float:
-
-        ps = self.prediction
-        ys = self.target
-        loss = torch.sum(-torch.log(torch.gather(ps, 1, ys)))
-        return loss.item()
-
-
-    def _input_grad(self) -> Tensor:
-        ps = self.prediction
-        ys = self.target
-
-        # Create a mask for our correct labels, with 1s for the true labels, 0 elsewhere
-        mask = torch.zeros_like(ps)
-        mask.scatter_(1, ys, 1)
-
-        # Picking out particular elements denoted by the correct labels
-        grads = mask * -1/ps
-
-        return grads
-
-
-class NLLLoss(Loss):
-    def __init__(self):
-        super().__init__()
-
-
-    def _output(self) -> float:
-        logps, target = self.prediction, self.target
-
-        zeros = torch.zeros_like(logps)
-        mask = zeros.scatter(1, target, 1)
-        L = mask * -logps
-
-        loss = L.sum().item()
-        return loss
-
-
-    def _input_grad(self) -> Tensor:
-
-        prediction, target = self.prediction, self.target
-
-        exp_z = torch.exp(prediction)
-        N = target.shape[0]
-        self.loss_grad = torch.sum(-target + (1-target)*exp_z/(1 - exp_z + self.eta), dim=1).view(N, -1)
-
-        return self.loss_grad
-
-
-    def __repr__(self):
-        return "NLLLoss"
+        if self.single_class:
+            return unnormalize(np.stack(prob_grads))
+        else:
+            return np.stack(prob_grads)
