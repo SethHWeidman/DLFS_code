@@ -14,8 +14,8 @@ class Loss(object):
         pass
 
     def forward(self,
-                prediction: np.ndarray,
-                target: np.ndarray) -> float:
+                prediction: ndarray,
+                target: ndarray) -> float:
 
         # batch size x num_classes
         assert_same_shape(prediction, target)
@@ -27,7 +27,7 @@ class Loss(object):
 
         return self.output
 
-    def backward(self) -> np.ndarray:
+    def backward(self) -> ndarray:
 
         self.input_grad = self._input_grad()
 
@@ -38,7 +38,7 @@ class Loss(object):
     def _output(self) -> float:
         raise NotImplementedError()
 
-    def _input_grad(self) -> np.ndarray:
+    def _input_grad(self) -> ndarray:
         raise NotImplementedError()
 
 
@@ -93,7 +93,7 @@ class SoftmaxCrossEntropy(Loss):
 
         return np.sum(softmax_cross_entropy_loss) / self.prediction.shape[0]
 
-    def _input_grad(self) -> np.ndarray:
+    def _input_grad(self) -> ndarray:
 
         # if "single_class", "un-normalize" probabilities before returning gradient:
         if self.single_class:
@@ -108,14 +108,13 @@ class SoftmaxCrossEntropyComplex(SoftmaxCrossEntropy):
         super().__init__()
         self.single_output = single_output
 
-
-    def _input_grad(self) -> np.ndarray:
+    def _input_grad(self) -> ndarray:
 
         prob_grads = []
         batch_size = self.softmax_preds.shape[0]
         num_features = self.softmax_preds.shape[1]
         for n in range(batch_size):
-            exp_ratio = exp_ratios(self.prediction[n])
+            exp_ratio = exp_ratios(self.prediction[n] - np.max(self.prediction[n]))
             jacobian = np.zeros((num_features, num_features))
             for f1 in range(num_features):  # p index
                 for f2 in range(num_features):  # SCE index

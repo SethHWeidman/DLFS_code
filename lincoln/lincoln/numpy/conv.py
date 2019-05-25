@@ -16,7 +16,6 @@ class Conv2D_Op(ParamOperation):
         z = np.repeat(z, self.param_pad)
         return np.concatenate([z, inp, z])
 
-
     def _pad_1d_batch(self,
                       inp: ndarray) -> ndarray:
         outs = [self._pad_1d(obs) for obs in inp]
@@ -50,7 +49,6 @@ class Conv2D_Op(ParamOperation):
         '''
         return np.stack([self._pad_2d_obs(channel) for channel in inp])
 
-
     def _get_image_patches(self,
                            input_: ndarray):
         imgs_batch_pad = np.stack([self._pad_2d_channel(obs) for obs in input_])
@@ -62,7 +60,6 @@ class Conv2D_Op(ParamOperation):
                 patches.append(patch)
         return np.stack(patches)
 
-
     def _output(self,
                 inference: bool = False):
         '''
@@ -71,12 +68,12 @@ class Conv2D_Op(ParamOperation):
         '''
     #     assert_dim(obs, 4)
     #     assert_dim(param, 4)
-        batch_size = self.inputs.shape[0]
-        img_height = self.inputs.shape[2]
-        img_size = self.inputs.shape[2] * self.inputs.shape[3]
+        batch_size = self.input_.shape[0]
+        img_height = self.input_.shape[2]
+        img_size = self.input_.shape[2] * self.input_.shape[3]
         patch_size = self.param.shape[0] * self.param.shape[2] * self.param.shape[3]
 
-        patches = self._get_image_patches(self.inputs)
+        patches = self._get_image_patches(self.input_)
 
         patches_reshaped = (patches
                             .transpose(1, 0, 2, 3, 4)
@@ -96,9 +93,9 @@ class Conv2D_Op(ParamOperation):
 
     def _input_grad(self, output_grad: np.ndarray) -> np.ndarray:
 
-        batch_size = self.inputs.shape[0]
-        img_size = self.inputs.shape[2] * self.inputs.shape[3]
-        img_height = self.inputs.shape[2]
+        batch_size = self.input_.shape[0]
+        img_size = self.input_.shape[2] * self.input_.shape[3]
+        img_height = self.input_.shape[2]
 
         output_patches = (self._get_image_patches(output_grad)
                           .transpose(1, 0, 2, 3, 4)
@@ -117,13 +114,13 @@ class Conv2D_Op(ParamOperation):
 
     def _param_grad(self, output_grad: ndarray) -> ndarray:
 
-        batch_size = self.inputs.shape[0]
-        img_size = self.inputs.shape[2] * self.inputs.shape[3]
+        batch_size = self.input_.shape[0]
+        img_size = self.input_.shape[2] * self.input_.shape[3]
         in_channels = self.param.shape[0]
         out_channels = self.param.shape[1]
 
         in_patches_reshape = (
-            self._get_image_patches(self.inputs)
+            self._get_image_patches(self.input_)
             .reshape(batch_size * img_size, -1)
             .transpose(1, 0)
             )

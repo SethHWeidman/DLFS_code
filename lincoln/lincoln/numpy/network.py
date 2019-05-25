@@ -1,22 +1,19 @@
 from typing import List
-import numpy as np
+from numpy import ndarray
 
 from .layers import Layer
 from .losses import Loss, MeanSquaredError
 
 
 class LayerBlock(object):
-    '''
-    We will ultimately want another level on top of operations and Layers, for example when we get to ResNets.
-    For now, I'm calling that a "LayerBlock" and defining a "NeuralNetwork" to be identical to it.
-    '''
+
     def __init__(self, layers: List[Layer]):
         super().__init__()
         self.layers = layers
 
     def forward(self,
-                X_batch: np.ndarray,
-                inference=False) ->  np.ndarray:
+                X_batch: ndarray,
+                inference=False) ->  ndarray:
 
         X_out = X_batch
         for layer in self.layers:
@@ -24,7 +21,7 @@ class LayerBlock(object):
 
         return X_out
 
-    def backward(self, loss_grad: np.ndarray) -> np.ndarray:
+    def backward(self, loss_grad: ndarray) -> ndarray:
 
         grad = loss_grad
         for layer in reversed(self.layers):
@@ -64,16 +61,16 @@ class NeuralNetwork(LayerBlock):
                 setattr(layer, "seed", self.seed)
 
     def forward_loss(self,
-                     X_batch: np.ndarray,
-                     y_batch: np.ndarray,
+                     X_batch: ndarray,
+                     y_batch: ndarray,
                      inference: bool = False) -> float:
 
         prediction = self.forward(X_batch, inference)
         return self.loss.forward(prediction, y_batch)
 
     def train_batch(self,
-                    X_batch: np.ndarray,
-                    y_batch: np.ndarray,
+                    X_batch: ndarray,
+                    y_batch: ndarray,
                     inference: bool = False) -> float:
 
         prediction = self.forward(X_batch, inference)
@@ -84,20 +81,3 @@ class NeuralNetwork(LayerBlock):
         self.backward(loss_grad)
 
         return batch_loss
-
-
-class SequentialNeuralNetwork(NeuralNetwork):
-
-    def __init__(self,
-                 num_features: int,
-                 sequence_length: int,
-                 layers: List[Layer],
-                 loss: Loss = MeanSquaredError):
-        super().__init__(layers)
-        self.loss = loss
-        self.num_features = num_features
-        self.sequence_length = sequence_length
-        for layer in self.layers:
-            if issubclass(layer.__class__, LSTMLayer):
-                setattr(layer, "vocab_size", self.num_features)
-                setattr(layer, "sequence_length", self.sequence_length)

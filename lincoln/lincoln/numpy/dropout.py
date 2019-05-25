@@ -12,11 +12,11 @@ class Dropout(Operation):
 
     def _output(self, inference: bool) -> ndarray:
         if inference:
-            return self.inputs * self.keep_prob
+            return self.input_ * self.keep_prob
         else:
             self.mask = np.random.binomial(1, self.keep_prob,
-                                           size=self.inputs.shape)
-            return self.inputs * self.mask
+                                           size=self.input_.shape)
+            return self.input_ * self.mask
 
     def _input_grad(self, output_grad: ndarray) -> ndarray:
         return output_grad * self.mask

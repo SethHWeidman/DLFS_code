@@ -91,6 +91,10 @@ def exp_ratios(ps):
     c = np.zeros((ps.shape[0], ps.shape[0])) # for p1, all the other values
     for i in range(len(ps)): # SCE subscript
         for j in range(len(ps)): # p subscript
-            c[i][j] = 1 - (np.exp(ps[i]) / b[j]) # e.g. for 2, 1 - (p1 / (e^p1 + e^p3))
+            try:
+                # print(ps[i], b[j])
+                c[i][j] = 1 - (np.exp(ps[i]) / b[j]) # e.g. for 2, 1 - (p1 / (e^p1 + e^p3))
+            except:
+                print(ps[i])
 
     return c

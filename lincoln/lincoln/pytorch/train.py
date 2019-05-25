@@ -38,9 +38,12 @@ class PyTorchTrainer(object):
             yield X_batch, y_batch
 
 
-    def fit(self, X_train: Tensor, y_train: Tensor,
-            X_test: Tensor, y_test: Tensor,
-            dataloader: DataLoader = None,
+    def fit(self, X_train: Tensor = None,
+            y_train: Tensor = None,
+            X_test: Tensor = None,
+            y_test: Tensor = None,
+            train_dataloader: DataLoader = None,
+            test_dataloader: DataLoader = None,
             epochs: int=100,
             eval_every: int=10,
             batch_size: int=32,
@@ -52,16 +55,16 @@ class PyTorchTrainer(object):
             scheduler = lr_scheduler.ExponentialLR(self.optim, gamma=decay)
         for e in range(epochs):
 
-            X_train, y_train = permute_data(X_train, y_train)
-
-            batch_generator = self._generate_batches(X_train, y_train,
-                                                     batch_size)
-
-            self.model.train()
             if final_lr_exp:
                 scheduler.step()
 
-            if not dataloader:
+            if not train_dataloader:
+                X_train, y_train = permute_data(X_train, y_train)
+
+                batch_generator = self._generate_batches(X_train, y_train,
+                                                         batch_size)
+
+                self.model.train()
 
                 for ii, (X_batch, y_batch) in enumerate(batch_generator):
 
@@ -81,7 +84,7 @@ class PyTorchTrainer(object):
                         print("The loss after", e, "epochs was", loss.item())
 
             else:
-                for ii, (X_batch, y_batch) in enumerate(dataloader):
+                for ii, (X_batch, y_batch) in enumerate(train_dataloader):
 
                     self.optim.zero_grad()   # zero the gradient buffers
 
@@ -93,7 +96,10 @@ class PyTorchTrainer(object):
 
                 if e % eval_every == 0:
                     with torch.no_grad():
-                        self.model.eval()
-                        output = self.model(X_test)[0]
-                        loss = self.loss(output, y_test)
-                        print("The loss after", e, "epochs was", loss.item())
+                        for ii, (X_batch, y_batch) in enumerate(test_dataloader):
+                            self.model.eval()
+                            losses = []
+                            output = self.model(X_batch)[0]
+                            loss = self.loss(output, y_batch)
+                            losses.append(loss.item())
+                        print("The loss after", e, "epochs was", round(torch.Tensor(losses).mean().item(), 4))
