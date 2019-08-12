@@ -7,7 +7,7 @@ from torch.optim import lr_scheduler
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader
 
-from lincoln.utils import permute_data
+from lincoln.np_utils import permute_data
 from .model import PyTorchModel
 
 
