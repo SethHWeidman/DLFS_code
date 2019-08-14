@@ -65,7 +65,7 @@ class PyTorchTrainer(object):
 
                 self.model.train()
 
-                for ii, (X_batch, y_batch) in enumerate(batch_generator):
+                for X_batch, y_batch in batch_generator:
 
                     self.optim.zero_grad()   # zero the gradient buffers
 
@@ -83,7 +83,7 @@ class PyTorchTrainer(object):
                         print("The loss after", e, "epochs was", loss.item())
 
             else:
-                for X_batch, y_batch in enumerate(train_dataloader):
+                for X_batch, y_batch in train_dataloader:
 
                     self.optim.zero_grad()   # zero the gradient buffers
 
@@ -97,7 +97,7 @@ class PyTorchTrainer(object):
                     with torch.no_grad():
                         self.model.eval()
                         losses = []
-                        for X_batch, y_batch in enumerate(test_dataloader):
+                        for X_batch, y_batch in test_dataloader:
                             output = self.model(X_batch)[0]
                             loss = self.loss(output, y_batch)
                             losses.append(loss.item())
