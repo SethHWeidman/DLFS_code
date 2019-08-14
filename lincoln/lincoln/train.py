@@ -84,7 +84,9 @@ class Trainer(object):
                         print(f"Validation loss after {e+1} epochs is {loss:.3f}")
                         self.best_loss = loss
                     else:
-                        print(f"""Loss increased after epoch {e+1}, final loss was {self.best_loss:.3f}, using the model from epoch {e+1-eval_every}""")
+                        print()
+                        print(f"Loss increased after epoch {e+1}, final loss was {self.best_loss:.3f},",
+                              f"\nusing the model from epoch {e+1-eval_every}")
                         self.net = last_model
                         # ensure self.optim is still updating self.net
                         setattr(self.optim, 'net', self.net)
