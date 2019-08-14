@@ -7,7 +7,7 @@ from numpy import ndarray
 
 from .network import NeuralNetwork
 from .optimizers import Optimizer
-from .np_utils import permute_data
+from lincoln.utils.np_utils import permute_data
 
 
 class Trainer(object):

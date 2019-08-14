@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import ndarray
 
-from .np_utils import (assert_same_shape,
+from lincoln.utils.np_utils import (assert_same_shape,
                        softmax,
                        normalize,
                        exp_ratios,
