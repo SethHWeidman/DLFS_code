@@ -88,8 +88,10 @@ class SoftmaxCrossEntropy(Loss):
         self.softmax_preds = np.clip(softmax_preds, self.eps, 1 - self.eps)
 
         # actual loss computation
-        softmax_cross_entropy_loss = -1.0 * self.target * np.log(self.softmax_preds) - \
-            (1.0 - self.target) * np.log(1 - self.softmax_preds)
+        softmax_cross_entropy_loss = (
+            -1.0 * self.target * np.log(self.softmax_preds) - \
+                (1.0 - self.target) * np.log(1 - self.softmax_preds)
+        )
 
         return np.sum(softmax_cross_entropy_loss) / self.prediction.shape[0]
 

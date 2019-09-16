@@ -75,7 +75,6 @@ class Conv2D_Op(ParamOperation):
 
         patches = self._get_image_patches(self.input_)
 
-        import pdb; pdb.set_trace()
         patches_reshaped = (patches
                             .transpose(1, 0, 2, 3, 4)
                             .reshape(batch_size, img_size, -1))
@@ -83,7 +82,7 @@ class Conv2D_Op(ParamOperation):
         param_reshaped = (self.param
                           .transpose(0, 2, 3, 1)
                           .reshape(patch_size, -1))
-        # import pdb; pdb.set_trace()
+
         output_reshaped = (
             np.matmul(patches_reshaped, param_reshaped)
             .reshape(batch_size, img_height, img_height, -1)
