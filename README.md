@@ -10,7 +10,7 @@ Each chapter has two notebooks: a `Code` notebook and a `Math` notebook. Each `C
 
 ### `lincoln`
 
-In the notebooks in the Chapters 4 and 5 folder, I import classes from `lincoln`, rather than putting those classes in the Jupyter Notebook itself. `lincoln` is not currently a `pip` installable library; th way I'd recommend to be able to `import` it and run these notebooks is to add a line like the following your `.bashrc` file:
+In the notebooks in the Chapters 4, 5, and 7 folders, I import classes from `lincoln`, rather than putting those classes in the Jupyter Notebook itself. `lincoln` is not currently a `pip` installable library; th way I'd recommend to be able to `import` it and run these notebooks is to add a line like the following your `.bashrc` file:
 
 ```bash
 export PYTHONPATH=$PYTHONPATH:/Users/seth/development/DLFS_code/lincoln
