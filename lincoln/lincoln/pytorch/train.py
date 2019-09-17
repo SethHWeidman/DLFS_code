@@ -37,10 +37,10 @@ class PyTorchTrainer(object):
 
             yield X_batch, y_batch
 
-    def fit(self, X_train: Optional[Tensor],
-            y_train: Optional[Tensor],
-            X_test: Optional[Tensor],
-            y_test: Optional[Tensor],
+    def fit(self, X_train: Tensor = None,
+            y_train: Tensor = None,
+            X_test: Tensor = None,
+            y_test: Tensor = None,
             train_dataloader: DataLoader = None,
             test_dataloader: DataLoader = None,
             epochs: int=100,
@@ -65,7 +65,7 @@ class PyTorchTrainer(object):
 
                 self.model.train()
 
-                for X_batch, y_batch in batch_generator:
+                for ii, (X_batch, y_batch) in enumerate(batch_generator):
 
                     self.optim.zero_grad()   # zero the gradient buffers
 
@@ -80,12 +80,12 @@ class PyTorchTrainer(object):
                         self.model.eval()
                         output = self.model(X_test)[0]
                         loss = self.loss(output, y_test)
-                        print("The loss after", e, "epochs was", loss.item())
+                        print("The loss after", e+1, "epochs was", loss.item())
 
             else:
                 for X_batch, y_batch in train_dataloader:
 
-                    self.optim.zero_grad()   # zero the gradient buffers
+                    self.optim.zero_grad()
 
                     output = self.model(X_batch)[0]
 
