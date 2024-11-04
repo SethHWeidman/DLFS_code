@@ -2,8 +2,6 @@ import numpy as np
 
 from lincoln.utils import np_utils
 
-# import assert_same_shape, softmax, normalize, unnormalize
-
 
 class Loss(object):
 
@@ -46,14 +44,9 @@ class MeanSquaredError(Loss):
     def _output(self) -> float:
 
         if self.normalize:
-            self.prediction = self.prediction / self.prediction.sum(
-                axis=1, keepdims=True
-            )
+            self.prediction = self.prediction / self.prediction.sum(axis=1, keepdims=True)
 
-        loss = (
-            np.sum(np.power(self.prediction - self.target, 2))
-            / self.prediction.shape[0]
-        )
+        loss = np.sum(np.power(self.prediction - self.target, 2)) / self.prediction.shape[0]
 
         return loss
 
@@ -77,9 +70,9 @@ class SoftmaxCrossEntropy(Loss):
 
         # if "single_class", apply the "normalize" operation defined above:
         if self.single_class:
-            self.prediction, self.target = np_utils.normalize(
-                self.prediction
-            ), np_utils.normalize(self.target)
+            self.prediction, self.target = np_utils.normalize(self.prediction), np_utils.normalize(
+                self.target
+            )
 
         # applying the softmax function to each row (observation)
         softmax_preds = np_utils.softmax(self.prediction, axis=1)

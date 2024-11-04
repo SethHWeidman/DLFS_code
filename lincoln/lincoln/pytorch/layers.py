@@ -1,4 +1,3 @@
-
 import torch.nn as nn
 from torch import Tensor
 
@@ -12,17 +11,18 @@ class PyTorchLayer(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, x: Tensor,
-                inference: bool = False) -> Tensor:
+    def forward(self, x: Tensor, inference: bool = False) -> Tensor:
         raise NotImplementedError()
 
 
 class DenseLayer(PyTorchLayer):
-    def __init__(self,
-                 input_size: int,
-                 neurons: int,
-                 dropout: float = 1.0,
-                 activation: nn.Module = None) -> None:
+    def __init__(
+        self,
+        input_size: int,
+        neurons: int,
+        dropout: float = 1.0,
+        activation: nn.Module = None,
+    ) -> None:
 
         super().__init__()
         self.linear = nn.Linear(input_size, neurons)
@@ -30,8 +30,7 @@ class DenseLayer(PyTorchLayer):
         if dropout < 1.0:
             self.dropout = nn.Dropout(1 - dropout)
 
-    def forward(self, x: Tensor,
-                inference: bool = False) -> Tensor:
+    def forward(self, x: Tensor, inference: bool = False) -> Tensor:
         if inference:
             self.apply(inference_mode)
 
