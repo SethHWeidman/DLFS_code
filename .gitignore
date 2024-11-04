@@ -13,3 +13,6 @@
 *.pt
 *ubyte
   
+*/utils/data*
+
+*.vscode

@@ -1,27 +1,25 @@
-from typing import List
-from numpy import ndarray
+import typing
+import numpy as np
 
-from .layers import Layer
-from .losses import Loss, MeanSquaredError
+from lincoln import layers
+from lincoln import losses
 
 
 class LayerBlock(object):
 
-    def __init__(self, layers: List[Layer]):
+    def __init__(self, layers: typing.List[layers.Layer]):
         super().__init__()
         self.layers = layers
 
-    def forward(self,
-                X_batch: ndarray,
-                inference=False) ->  ndarray:
+    def forward(self, X_batch: np.ndarray) -> np.ndarray:
 
         X_out = X_batch
         for layer in self.layers:
-            X_out = layer.forward(X_out, inference)
+            X_out = layer.forward(X_out)
 
         return X_out
 
-    def backward(self, loss_grad: ndarray) -> ndarray:
+    def backward(self, loss_grad: np.ndarray) -> np.ndarray:
 
         grad = loss_grad
         for layer in reversed(self.layers):
@@ -46,13 +44,16 @@ class LayerBlock(object):
 
 
 class NeuralNetwork(LayerBlock):
-    '''
+    """
     Just a list of layers that runs forwards and backwards
-    '''
-    def __init__(self,
-                 layers: List[Layer],
-                 loss: Loss = MeanSquaredError,
-                 seed: int = 1):
+    """
+
+    def __init__(
+        self,
+        layers: typing.List[layers.Layer],
+        loss: losses.Loss = losses.MeanSquaredError,
+        seed: int = 1,
+    ):
         super().__init__(layers)
         self.loss = loss
         self.seed = seed
@@ -60,20 +61,14 @@ class NeuralNetwork(LayerBlock):
             for layer in self.layers:
                 setattr(layer, "seed", self.seed)
 
-    def forward_loss(self,
-                     X_batch: ndarray,
-                     y_batch: ndarray,
-                     inference: bool = False) -> float:
+    def forward_loss(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
 
-        prediction = self.forward(X_batch, inference)
+        prediction = self.forward(X_batch)
         return self.loss.forward(prediction, y_batch)
 
-    def train_batch(self,
-                    X_batch: ndarray,
-                    y_batch: ndarray,
-                    inference: bool = False) -> float:
+    def train_batch(self, X_batch: np.ndarray, y_batch: np.ndarray) -> float:
 
-        prediction = self.forward(X_batch, inference)
+        prediction = self.forward(X_batch)
 
         batch_loss = self.loss.forward(prediction, y_batch)
         loss_grad = self.loss.backward()
